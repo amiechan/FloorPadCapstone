@@ -1,79 +1,84 @@
 import PySimpleGUI as sg
-from gpiozero import LED
-import time
 
-# # session countdown
-def countdown(t):
-    while t:
-        mins, secs = divmod(t, 60)
-        timeformat = '{:02d}:{:02d}'.format(mins, secs)
-        print(timeformat, end='\r')
-        time.sleep(1)
-        t -= 1 
+sg.theme('GreenTan')
 
-
-# main
-def main():
-    # Theme
-    sg.theme('GreenTan')
-
+# First window
+def make_win1():
+    ############### Pre-Session ###############
     # Mode
-    frame_1 = [[sg.Combo(('Standing', 'Chair'),
-                     default_value='Standing', readonly=True, key='-MODE-')]]
+    mode_frame = [[sg.Combo(('Standing', 'Chair'),
+                        default_value='Standing', readonly=True, key='-MODE-', pad=10, font='Any 20')]]
 
     # Movement Timer
-    frame_2 = [[sg.Combo(('10 seconds', '20 seconds', '30 seconds', '40 seconds',
-                     '50 seconds', '60 seconds'), default_value='10 seconds', readonly=True, key='-TIMER-')]]
+    movement_frame = [[sg.Combo(('10 seconds', '20 seconds', '30 seconds', '40 seconds',
+                             '50 seconds', '60 seconds'), default_value='10 seconds', readonly=True, key='-TIMER-', pad=10, font='Any 20')]]
 
-    # Session Duration
-    frame_3 = [[sg.Text('Minutes')],
-           [sg.Combo([i for i in range(1, 6)], default_value='1',
-                     readonly=True, key='-MINUTES-')],
-           [sg.Text('Seconds')],
-           [sg.Combo([i for i in range(0, (4+1)*15, 15)], default_value='0', readonly=True, key='-SECONDS-')]]
+    # Duration
+    duration_left_col = [[sg.Text('Minutes', font='Any 20')],
+                     [sg.Combo([i for i in range(1, 6)], default_value='1', readonly=True, key='-MINUTES-', font='Any 20', pad=10)]]
 
-    # Layout
-    layout = [[sg.Text('Create a New Session', font=('Helvetica', 20))],
-          [sg.Frame('Mode', frame_1, font='Any 12')],
-          [sg.Frame('Movement Timer', frame_2, font='Any 12')],
-          [sg.Frame('Session Duration', frame_3, font='Any 12')],
-          [sg.Checkbox('Display Score', default=False, key='-SCORE-')],
-          [sg.Button('Submit'), sg.Button('Cancel')]]
+    duration_right_col = [[sg.Text('Seconds', font='Any 20')],
+                      [sg.Combo([i for i in range(0, (4+1)*15, 15)], default_value='0', readonly=True, key='-SECONDS-', font='Any 20', pad=10)]]
 
-    window = sg.Window('Floor Pad', layout, size=(800, 480), element_justification="center", finalize=True)
-    window.Maximize()
+    duration_frame = [[sg.Column(duration_left_col, element_justification='center', pad=10), sg.Column(duration_right_col, element_justification='center', pad=10)]]
 
-    # Event Loop to process "events" and get the "values" of the inputs
-    while True:
-        event, values = window.read()
-        if event == sg.WIN_CLOSED or event == 'Cancel':  # if user closes window or clicks cancel
-            print('Closing window')
+    score_frame = [[sg.Checkbox('Display Score', default=False, pad=38, key='-SCORE-', font='Any 20')]]
+
+    left_col1 = [[sg.Frame(' Mode ', mode_frame, element_justification='center', font='Any 24', pad=10)],
+            [sg.Frame(' Duration ', duration_frame, font='Any 24', pad=10)],
+            [sg.Button(' Submit ', font='Any 20', pad=10)]]
+
+    right_col1 = [[sg.Frame(' Movement Timer ', movement_frame, element_justification='center', font='Any 24', pad=10)],
+        [sg.Frame(' Score ', score_frame, element_justification='center', font='Any 24', pad=10)],
+        [sg.Button(' Exit ', font='Any 20', pad=10)]]
+
+    layout = [[sg.Text('Create a New Session', font=(any, 30), pad=5)],
+            [sg.Column(left_col1, element_justification='center'), sg.Column(right_col1, element_justification='center')]]
+    return sg.Window('Floor Pad', layout, size=(800, 480), element_justification="center", finalize=True)
+
+
+# Second window
+def make_win2():
+    # Druation timer
+    remaining_duration_frame = [[sg.Text('test', key='-REMAININGDURATION-', pad=10, font='Any 20')]]
+
+    # Movement Timer
+    remaining_movement_frame = [[sg.Text('test', key='-REMAININGTIMER-', pad=10, font='Any 20')]]
+
+    # End Score
+    end_score_frame = [[sg.Text('test', key='-REMAININGTIMER-', pad=10, font='Any 20')]]
+
+    left_col2 = [[sg.Frame(' Remaining Time ', remaining_duration_frame, element_justification='center', font='Any 24', pad=10)],
+            [sg.Button(' Pause ', font='Any 20', pad=10)]]
+
+    right_col2 = [[sg.Frame(' Movement Timer ', remaining_movement_frame, element_justification='center', font='Any 24', pad=10)],
+            [sg.Button(' Exit ', font='Any 20', pad=10)]]
+
+
+    layout = [[sg.Text('Session In Progress', font=(any, 30), key='-TITLE-', pad=5)],
+              [sg.Column(left_col2, element_justification='center'), sg.Column(right_col2, element_justification='center')],
+              [sg.Frame(' Score ', end_score_frame, element_justification='center', font='Any 24', pad=10)],
+              [sg.Button(' Continue ', font='Any 20', pad=10)]]
+    return sg.Window('Floor Pad', layout, size=(800, 480), element_justification="center", finalize=True)
+
+window1, window2 = make_win1(), None        # start off with 1 window open
+
+# window1.Maximize()
+
+while True:             # Event Loop
+    window, event, values = sg.read_all_windows()
+    if event == sg.WIN_CLOSED or event == ' Exit ':
+        window.close()
+        if window == window2:       # if closing win 2, mark as closed
+            window2 = None
+        elif window == window1:     # if closing win 1, exit program
             break
-
-        if event == 'Submit':
-            print(values)
-
-            mode = values['-MODE-']
-
-            minutes = values['-MINUTES-']
-            seconds = values['-SECONDS-']
-            totalSeconds = (minutes * 60) + seconds
-            print(totalSeconds)
-
-            while totalSeconds:
-                mins, secs = divmod(totalSeconds, 60)
-                timeformat = '{:02d}:{:02d}'.format(mins, secs)
-                print(timeformat, end='\r')
-                time.sleep(1)
-                totalSeconds -= 1 
-
-
-            # countdown(minutes, seconds)
-            movementTimer = int(values['-TIMER-'][:2])
-            score = values['-SCORE-']
-
-    window.close()
-
-
-if __name__ == "__main__":
-    main()
+    elif event == 'Popup':
+        sg.popup('This is a BLOCKING popup',
+                 'all windows remain inactive while popup active')
+    elif event == ' Submit ' and not window2:
+        window2 = make_win2()
+        # window2.Maximize()
+    # elif event == ' Erase ':
+    #     window['-IN-'].update('')
+window.close()
