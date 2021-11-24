@@ -1,6 +1,11 @@
 import PySimpleGUI as sg
+import gpiozero
+import time
 
 sg.theme('GreenTan')
+
+def time_as_int():
+    return int(round(time.time() * 100))
 
 # First window
 def make_win1():
@@ -54,7 +59,6 @@ def make_win2():
     right_col2 = [[sg.Frame(' Movement Timer ', remaining_movement_frame, element_justification='center', font='Any 24', pad=10)],
             [sg.Button(' Exit ', font='Any 20', pad=10)]]
 
-
     layout = [[sg.Text('Session In Progress', font=(any, 30), key='-TITLE-', pad=5)],
               [sg.Column(left_col2, element_justification='center'), sg.Column(right_col2, element_justification='center')],
               [sg.Frame(' Score ', end_score_frame, element_justification='center', font='Any 24', pad=10)],
@@ -64,8 +68,11 @@ def make_win2():
 window1, window2 = make_win1(), None        # start off with 1 window open
 
 # window1.Maximize()
+current_time, paused_time, paused = 0, 0, False
+start_time = time_as_int()
 
-while True:             # Event Loop
+# Event Loop
+while True:
     window, event, values = sg.read_all_windows()
     if event == sg.WIN_CLOSED or event == ' Exit ':
         window.close()
@@ -73,10 +80,11 @@ while True:             # Event Loop
             window2 = None
         elif window == window1:     # if closing win 1, exit program
             break
-    elif event == 'Popup':
-        sg.popup('This is a BLOCKING popup',
-                 'all windows remain inactive while popup active')
+    # elif event == ' Submit ' and values['-MODE-'] == 'Chair' and not window2:
+    #     sg.popup('You Chose Chair Mode',
+    #              'Place a chair on the floor pad.')
     elif event == ' Submit ' and not window2:
+        print(values)
         window2 = make_win2()
         # window2.Maximize()
     # elif event == ' Erase ':
