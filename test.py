@@ -19,11 +19,11 @@ def make_win1():
 
     # Movement Timer
     movement_frame = [[sg.Combo(('10 seconds', '20 seconds', '30 seconds', '40 seconds',
-                                 '50 seconds', '60 seconds'), default_value='10 seconds', readonly=True, key='-TIMER-', pad=10, font='Any 20')]]
+                                 '50 seconds', '60 seconds'), default_value='10 seconds', readonly=True, key='-MOVEMENT-TIMER-', pad=10, font='Any 20')]]
 
     # Duration
     duration_left_col = [[sg.Text('Minutes', font='Any 20')],
-                         [sg.Combo([i for i in range(1, 6)], default_value='1', readonly=True, key='-MINUTES-', font='Any 20', pad=10)]]
+                         [sg.Combo([i for i in range(0, 6)], default_value='1', readonly=True, key='-MINUTES-', font='Any 20', pad=10)]]
 
     duration_right_col = [[sg.Text('Seconds', font='Any 20')],
                           [sg.Combo([i for i in range(0, (4+1)*15, 15)], default_value='0', readonly=True, key='-SECONDS-', font='Any 20', pad=10)]]
@@ -53,11 +53,11 @@ def make_win1():
 def make_win2():
     # Druation timer
     remaining_duration_frame = [
-        [sg.Text('test', key='-REMAINING-DURATION-', pad=10, font='Any 20')]]
+        [sg.Text('Start!', key='-REMAINING-DURATION-', pad=10, font='Any 20')]]
 
     # Movement Timer
     remaining_movement_frame = [
-        [sg.Text('test', key='-REMAINING-TIMER-', pad=10, font='Any 20')]]
+        [sg.Text('Start!', key='-REMAINING-TIMER-', pad=10, font='Any 20')]]
 
     # End Score
     end_score_frame = [
@@ -67,13 +67,12 @@ def make_win2():
                  [sg.Button(' Pause ', key='-RUN-PAUSE-', font='Any 20', pad=10)]]
 
     right_col2 = [[sg.Frame(' Movement Timer ', remaining_movement_frame, element_justification='center', font='Any 24', pad=10)],
-                  [sg.Button(' End ', font='Any 20', pad=10)]]
+                  [sg.Button(' End ', key='-END-', font='Any 20', pad=10)]]
 
     layout = [[sg.Text('Session In Progress', font=(any, 30), key='-TITLE-', pad=5)],
               [sg.Column(left_col2, element_justification='center'),
                sg.Column(right_col2, element_justification='center')],
-              [sg.Frame(' Score ', end_score_frame,
-                        element_justification='center', font='Any 24', pad=10)],
+              [sg.Frame(' Score ', end_score_frame, element_justification='center', font='Any 24', pad=10)],
               [sg.Button(' Continue ', font='Any 20', pad=10)]]
     return sg.Window('Floor Pad', layout, size=(800, 480), element_justification="center", finalize=True)
 
@@ -97,52 +96,80 @@ while True:
         # if values['-MODE-'] == 'Chair':
         #     sg.popup('You Chose Chair Mode',
         #              'Place a chair on the floor pad.')
+        # total seconds
         mins_duration = values['-MINUTES-']
         secs_duration = values['-SECONDS-']
+        m_timer = values['-MOVEMENT-TIMER-']
 
-        total_secs_duration = (mins_duration * 60) + secs_duration
-        print(total_secs_duration)
+        movement_value = int(m_timer[:2])
+        movement_timer = movement_value
+        overall_duration = (mins_duration * 60) + secs_duration
         
-
-        print(values)
         window2 = make_win2()
+        session_end = False
         win2_active = True
         # window2.Maximize()
-    elif event == '-RUN-PAUSE-':
-        paused = not paused
-        if paused:
-            paused_time = time_as_int()
-        else:
-            start_time = start_time + time_as_int() - paused_time
-        window['-RUN-PAUSE-'].update(' Run ' if paused else ' Pause ')
 
     while win2_active:
         if not paused:
-            event, values = window2.read(timeout=10)
-            current_time = time_as_int() - start_time
+            event, values = window2.read(timeout=1000)
+            mins_d, secs_d = divmod(overall_duration, 60)
+            mins_m, secs_m = divmod(movement_timer, 60)
         else:
             event, values = window2.read()
 
-        if event == sg.WIN_CLOSED or event == ' End ':
+        if event == sg.WIN_CLOSED or event == '-END-':
             window2.close()
-            print('ENDING SESSION')
+            print('EXITING SESSION: user clicked end')
             win2_active = False
         elif event == '-RUN-PAUSE-':
             paused = not paused
             if paused:
-                paused_time = time_as_int()
+                paused_time = overall_duration
             else:
-                start_time = start_time + time_as_int() - paused_time
+                mins_d, secs_d = divmod(overall_duration, 60)
+                mins_m, secs_m = divmod(movement_timer, 60)
             window2['-RUN-PAUSE-'].update(' Run ' if paused else ' Pause ')
 
-        window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format((current_time // 100) // 60, (current_time // 100) % 60))
-        window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format((current_time // 100) // 60, (current_time // 100) % 60))
+
+        # Movement Timer Complete
+        if movement_timer == 0:
+            print('Movement Timer Complete')
+            # movement timer greater than remaining duration
+            if movement_value > overall_duration:
+                paused = True
+                session_end = True
+                window2['-TITLE-'].update('Session Complete')
+                window2['-RUN-PAUSE-'].update(disabled = True)
+                window2['-END-'].update(disabled = True)
+                print('ENDING SESSION: movement timer greater than remaining duration')
+            # reset movement timer
+            else:
+                print(movement_timer)
+                movement_timer = movement_value
+                print('Movement timer less than remaining duration, resetting')
+                print(movement_timer)
+
+
+        # Session Complete: duration timer ran out
+        if overall_duration == 0:
+            paused = True
+            session_end = True
+            window2['-TITLE-'].update('Session Complete')
+            window2['-RUN-PAUSE-'].update(disabled = True)
+            window2['-END-'].update(disabled = True)
+            print('ENDING SESSION: duration timer ran out')
+            # todo: display score
+
+        overall_duration -= 1
+        movement_timer -= 1
+        
+        window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format(mins_d, secs_d))
+        window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(mins_m, secs_m))
+            
+# todo: 
+# movement timer
+# hide score + buttons      
 
 window.close()
 
-# get total seconds
-# divmod(t, 60)
-# format timer
-# print timer
-# sleep 1
-# t -= 1
