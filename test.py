@@ -73,7 +73,7 @@ def make_win2():
               [sg.Column(left_col2, element_justification='center'),
                sg.Column(right_col2, element_justification='center')],
               [sg.Frame(' Score ', end_score_frame, element_justification='center', font='Any 24', pad=10)],
-              [sg.Button(' Continue ', font='Any 20', pad=10)]]
+              [sg.Button(' Continue ', key='-CONTINUE-', font='Any 20', pad=10)]]
     return sg.Window('Floor Pad', layout, size=(800, 480), element_justification="center", finalize=True)
 
 
@@ -118,7 +118,7 @@ while True:
         else:
             event, values = window2.read()
 
-        if event == sg.WIN_CLOSED or event == '-END-':
+        if event == sg.WIN_CLOSED or event == '-END-' or event == '-CONTINUE-':
             window2.close()
             print('EXITING SESSION: user clicked end')
             win2_active = False
@@ -145,10 +145,7 @@ while True:
                 print('ENDING SESSION: movement timer greater than remaining duration')
             # reset movement timer
             else:
-                print(movement_timer)
                 movement_timer = movement_value
-                print('Movement timer less than remaining duration, resetting')
-                print(movement_timer)
 
 
         # Session Complete: duration timer ran out
@@ -172,4 +169,3 @@ while True:
 # hide score + buttons      
 
 window.close()
-
