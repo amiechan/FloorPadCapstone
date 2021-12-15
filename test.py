@@ -1,16 +1,32 @@
 import PySimpleGUI as sg
-import gpiozero
 import time
+from gpiozero import LED, Button
+from gpiozero.pins.pigpio import PiGPIOFactory
+import random
+
+factory = PiGPIOFactory(host='10.248.12.34')
+
+led0 = LED(20, pin_factory=factory)
+led1 = LED(19, pin_factory=factory)
+led2 = LED(26, pin_factory=factory)
+
+button0 = Button(5, pin_factory=factory)
+button1 = Button(6, pin_factory=factory)
+button2 = Button(13, pin_factory=factory)
+
+leds = [led0, led1, led2]
+pad = {led0: button0,
+       led1: button1,
+       led2: button2}
+
+previous = None
 
 sg.theme('GreenTan')
-
 
 def time_as_int():
     return int(round(time.time() * 100))
 
 # First window
-
-
 def make_win1():
     ############### Pre-Session ###############
     # Mode
@@ -31,6 +47,7 @@ def make_win1():
     duration_frame = [[sg.Column(duration_left_col, element_justification='center', pad=10), sg.Column(
         duration_right_col, element_justification='center', pad=10)]]
 
+    # Score
     score_frame = [[sg.Checkbox(
         'Display Score', default=False, pad=38, key='-SCORE-', font='Any 20')]]
 
@@ -51,7 +68,7 @@ def make_win1():
 
 # Second window
 def make_win2():
-    # Druation timer
+    # Duration timer
     remaining_duration_frame = [
         [sg.Text('Start!', key='-REMAINING-DURATION-', pad=10, font='Any 20')]]
 
@@ -76,12 +93,10 @@ def make_win2():
               [sg.Button(' Continue ', key='-CONTINUE-', font='Any 20', pad=10)]]
     return sg.Window('Floor Pad', layout, size=(800, 480), element_justification="center", finalize=True)
 
-
-window1, window2 = make_win1(), None        # start off with 1 window open
+# start off with 1 window open
+window1, window2 = make_win1(), None
 
 # window1.Maximize()
-# current_time, paused_time, paused = 0, 0, False
-# start_time = time_as_int()
 win2_active = False
 
 while True:
@@ -110,6 +125,7 @@ while True:
         win2_active = True
         # window2.Maximize()
 
+    # window2
     while win2_active:
         if not paused:
             event, values = window2.read(timeout=1000)
@@ -131,7 +147,6 @@ while True:
                 mins_m, secs_m = divmod(movement_timer, 60)
             window2['-RUN-PAUSE-'].update(' Run ' if paused else ' Pause ')
 
-
         # Movement Timer Complete
         if movement_timer == 0:
             print('Movement Timer Complete')
@@ -146,7 +161,7 @@ while True:
             # reset movement timer
             else:
                 movement_timer = movement_value
-
+                mins_m, secs_m = divmod(movement_timer, 60)
 
         # Session Complete: duration timer ran out
         if overall_duration == 0:
@@ -156,7 +171,6 @@ while True:
             window2['-RUN-PAUSE-'].update(disabled = True)
             window2['-END-'].update(disabled = True)
             print('ENDING SESSION: duration timer ran out')
-            # todo: display score
 
         overall_duration -= 1
         movement_timer -= 1
@@ -165,7 +179,7 @@ while True:
         window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(mins_m, secs_m))
             
 # todo: 
-# movement timer
-# hide score + buttons      
+# hide score + buttons   
+# display score   
 
 window.close()
