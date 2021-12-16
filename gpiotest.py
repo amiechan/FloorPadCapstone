@@ -17,14 +17,19 @@ leds = [led0, led1, led2]
 pad = {led0: button0,
        led1: button1,
        led2: button2}
+
 previous = None
 
+current_led = random.choice(leds)
 
 while True:
-    value = random.choice(leds)
-    if value != previous:
-        print(value)
-        value.on()
-        pad[value].wait_for_press()
-        value.off()
-        previous = value
+    if current_led != previous:
+        current_led.on()
+        if (pad[current_led].is_pressed):
+            print("pressed" + str(current_led.pin))
+            current_led.off()
+            previous = current_led
+            current_led = random.choice(leds)
+    else:
+        current_led = random.choice(leds)
+

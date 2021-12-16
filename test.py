@@ -19,7 +19,6 @@ pad = {led0: button0,
        led1: button1,
        led2: button2}
 
-previous = None
 
 sg.theme('GreenTan')
 
@@ -125,10 +124,13 @@ while True:
         win2_active = True
         # window2.Maximize()
 
+    previous = None
+    current_led = random.choice(leds)
+
     # window2
     while win2_active:
         if not paused:
-            event, values = window2.read(timeout=1000)
+            event, values = window2.read(timeout=100)
             mins_d, secs_d = divmod(overall_duration, 60)
             mins_m, secs_m = divmod(movement_timer, 60)
         else:
@@ -177,7 +179,16 @@ while True:
         
         window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format(mins_d, secs_d))
         window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(mins_m, secs_m))
-            
+
+        if current_led != previous:
+            current_led.on()
+            if (pad[current_led].is_pressed):
+                print("pressed" + str(current_led.pin))
+                current_led.off()
+                previous = current_led
+                current_led = random.choice(leds)
+        else:
+            current_led = random.choice(leds)
 # todo: 
 # hide score + buttons   
 # display score   
