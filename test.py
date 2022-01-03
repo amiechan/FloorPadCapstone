@@ -4,7 +4,7 @@ from gpiozero import LED, Button
 from gpiozero.pins.pigpio import PiGPIOFactory
 import random
 
-factory = PiGPIOFactory(host='10.248.12.34')
+factory = PiGPIOFactory(host='192.168.50.30')
 
 led0 = LED(20, pin_factory=factory)
 led1 = LED(19, pin_factory=factory)
@@ -77,7 +77,7 @@ def make_win2():
 
     # End Score
     end_score_frame = [
-        [sg.Text('test', key='-REMAINING-TIMER-', pad=10, font='Any 20')]]
+        [sg.Text('0', key='-CURRENT-SCORE-', pad=10, font='Any 20')]]
 
     left_col2 = [[sg.Frame(' Remaining Time ', remaining_duration_frame, element_justification='center', font='Any 24', pad=10)],
                  [sg.Button(' Pause ', key='-RUN-PAUSE-', font='Any 20', pad=10)]]
@@ -126,7 +126,8 @@ while True:
 
     previous = None
     current_led = random.choice(leds)
-
+    ms_count = 0
+    score = 0
     # window2
     while win2_active:
         if not paused:
@@ -174,11 +175,15 @@ while True:
             window2['-END-'].update(disabled = True)
             print('ENDING SESSION: duration timer ran out')
 
-        overall_duration -= 1
-        movement_timer -= 1
-        
-        window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format(mins_d, secs_d))
-        window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(mins_m, secs_m))
+        if (ms_count == 10):
+            overall_duration -= 1
+            movement_timer -= 1
+
+            window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format(mins_d, secs_d))
+            window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(mins_m, secs_m))
+
+            ms_count = 0
+            
 
         if current_led != previous:
             current_led.on()
@@ -187,8 +192,17 @@ while True:
                 current_led.off()
                 previous = current_led
                 current_led = random.choice(leds)
+                score += 1
+                window2['-CURRENT-SCORE-'].update(score)
+
         else:
             current_led = random.choice(leds)
+            movement_timer = movement_value
+            mins_m, secs_m = divmod(movement_timer, 60)
+            window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format(mins_d, secs_d))
+            window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(mins_m, secs_m))
+
+        ms_count += 1
 # todo: 
 # hide score + buttons   
 # display score   

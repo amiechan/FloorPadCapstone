@@ -3,7 +3,7 @@ from gpiozero.pins.pigpio import PiGPIOFactory
 import os
 import random
 import time
-factory = PiGPIOFactory(host='10.248.12.34')
+factory = PiGPIOFactory(host='192.168.50.30')
 
 led0 = LED(20, pin_factory=factory)
 led1 = LED(19, pin_factory=factory)
