@@ -94,27 +94,28 @@ def make_win2():
 
 # start off with 1 window open
 window1, window2 = make_win1(), None
-
 # window1.Maximize()
 win2_active = False
 
+
 while True:
     window, event, values = sg.read_all_windows()
-    current_time, paused_time, paused = 0, 0, False
-    start_time = time_as_int()
+    elapsed_time, paused_time, paused = 0, 0, False
+    d_start_time = time_as_int()
+    m_start_time = time_as_int()
     # --------- Window Exit --------
     if event == sg.WIN_CLOSED or event == ' Exit ':
-        window1.close()    # if closing win 1, exit program
+        window1.close()
         break
     elif event == '-SUBMIT-':
         # if values['-MODE-'] == 'Chair':
         #     sg.popup('You Chose Chair Mode',
         #              'Place a chair on the floor pad.')
-        # total seconds
+
+        # Timers in seconds
         mins_duration = values['-MINUTES-']
         secs_duration = values['-SECONDS-']
         m_timer = values['-MOVEMENT-TIMER-']
-
         movement_value = int(m_timer[:2])
         movement_timer = movement_value
         overall_duration = (mins_duration * 60) + secs_duration
@@ -130,63 +131,63 @@ while True:
     score = 0
     # window2
     while win2_active:
+        # --------- Read and update window --------
         if not paused:
-            event, values = window2.read(timeout=100)
-            mins_d, secs_d = divmod(overall_duration, 60)
-            mins_m, secs_m = divmod(movement_timer, 60)
+            event, values = window2.read(timeout=10)
+            # Duration timer
+            d_elapsed_time = time_as_int() - d_start_time
+            duration_timer = overall_duration - (d_elapsed_time // 100)
+            # Movement timer
+            m_elapsed_time = time_as_int() - m_start_time
+            movement_timer = movement_value - (m_elapsed_time // 100)
         else:
             event, values = window2.read()
 
-        if event == sg.WIN_CLOSED or event == '-END-' or event == '-CONTINUE-':
+        # --------- Do Button Operations --------
+        if event in (sg.WIN_CLOSED, '-END-', '-CONTINUE-'):
+            current_led.off()
             window2.close()
-            print('EXITING SESSION: user clicked end')
+            print('EXITING SESSION WINDOW')
             win2_active = False
         elif event == '-RUN-PAUSE-':
             paused = not paused
             if paused:
-                paused_time = overall_duration
+                paused_time = time_as_int()
             else:
-                mins_d, secs_d = divmod(overall_duration, 60)
-                mins_m, secs_m = divmod(movement_timer, 60)
+                start_time = start_time + time_as_int() - paused_time
+            # Change Button Text
             window2['-RUN-PAUSE-'].update(' Run ' if paused else ' Pause ')
 
         # Movement Timer Complete
         if movement_timer == 0:
             print('Movement Timer Complete')
-            # movement timer greater than remaining duration
-            if movement_value > overall_duration:
+            # Session Complete: Movement timer greater than remaining duration
+            if movement_value > duration_timer:
                 paused = True
                 session_end = True
+                current_led.off()
                 window2['-TITLE-'].update('Session Complete')
                 window2['-RUN-PAUSE-'].update(disabled = True)
                 window2['-END-'].update(disabled = True)
                 print('ENDING SESSION: movement timer greater than remaining duration')
-            # reset movement timer
+            # Movement timer less than or equal to remaining duration -> Reset movement timer and continue
             else:
+                print("reset movement timer")
                 movement_timer = movement_value
-                mins_m, secs_m = divmod(movement_timer, 60)
-
+                m_start_time = time_as_int() 
         # Session Complete: duration timer ran out
-        if overall_duration == 0:
+        elif duration_timer == 0:
             paused = True
             session_end = True
+            current_led.off()
             window2['-TITLE-'].update('Session Complete')
             window2['-RUN-PAUSE-'].update(disabled = True)
             window2['-END-'].update(disabled = True)
             print('ENDING SESSION: duration timer ran out')
-
-        if (ms_count == 10):
-            overall_duration -= 1
-            movement_timer -= 1
-
-            window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format(mins_d, secs_d))
-            window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(mins_m, secs_m))
-
-            ms_count = 0
             
-
         if current_led != previous:
             current_led.on()
+            # correct button pressed
             if (pad[current_led].is_pressed):
                 print("pressed" + str(current_led.pin))
                 current_led.off()
@@ -194,17 +195,13 @@ while True:
                 current_led = random.choice(leds)
                 score += 1
                 window2['-CURRENT-SCORE-'].update(score)
-
+                movement_timer = movement_value
+                m_start_time = time_as_int()
         else:
             current_led = random.choice(leds)
             movement_timer = movement_value
-            mins_m, secs_m = divmod(movement_timer, 60)
-            window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format(mins_d, secs_d))
-            window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(mins_m, secs_m))
-
-        ms_count += 1
-# todo: 
-# hide score + buttons   
-# display score   
+            
+        window2['-REMAINING-DURATION-'].update('{:02d}:{:02d}'.format(duration_timer // 60, duration_timer % 60))
+        window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(movement_timer // 60, movement_timer % 60))
 
 window.close()
