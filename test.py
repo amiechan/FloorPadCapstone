@@ -97,7 +97,6 @@ window1, window2 = make_win1(), None
 # window1.Maximize()
 win2_active = False
 
-
 while True:
     window, event, values = sg.read_all_windows()
     elapsed_time, paused_time, paused = 0, 0, False
@@ -129,6 +128,8 @@ while True:
     current_led = random.choice(leds)
     ms_count = 0
     score = 0
+    
+
     # window2
     while win2_active:
         # --------- Read and update window --------
@@ -145,7 +146,7 @@ while True:
 
         # --------- Do Button Operations --------
         if event in (sg.WIN_CLOSED, '-END-', '-CONTINUE-'):
-            current_led.off()
+            print(current_led)
             window2.close()
             print('EXITING SESSION WINDOW')
             win2_active = False
@@ -154,7 +155,8 @@ while True:
             if paused:
                 paused_time = time_as_int()
             else:
-                start_time = start_time + time_as_int() - paused_time
+                d_start_time = d_start_time + time_as_int() - paused_time
+                m_start_time = m_start_time + time_as_int() - paused_time
             # Change Button Text
             window2['-RUN-PAUSE-'].update(' Run ' if paused else ' Pause ')
 
@@ -205,3 +207,6 @@ while True:
         window2['-REMAINING-TIMER-'].update('{:02d}:{:02d}'.format(movement_timer // 60, movement_timer % 60))
 
 window.close()
+
+# todo: 
+# current led stays on after exiting window2 / when script ends
