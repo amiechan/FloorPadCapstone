@@ -146,10 +146,10 @@ while True:
 
         # --------- Do Button Operations --------
         if event in (sg.WIN_CLOSED, '-END-', '-CONTINUE-'):
-            print(current_led)
             window2.close()
             print('EXITING SESSION WINDOW')
             win2_active = False
+            break
         elif event == '-RUN-PAUSE-':
             paused = not paused
             if paused:
